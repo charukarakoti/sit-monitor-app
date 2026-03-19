@@ -1,7 +1,8 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --lineColor: #E88A24;
+  --lineWidth: 1px;
 }
+
 
 @media (prefers-color-scheme: dark) {
   :root {
