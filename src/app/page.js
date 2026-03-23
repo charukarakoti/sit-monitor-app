@@ -161,9 +161,13 @@ color:"#111"
 
 <div style={{maxWidth:"1200px",margin:"auto"}}>
 
-<h1 style={{fontSize:"30px",fontWeight:"700"}}>
-🌐 Site Monitor Dashboard
-</h1>
+<div style={{marginBottom:"10px"}}>
+  <img 
+    src="https://jaiveeru.co.in/wp-content/uploads/2023/04/JV-colour-logo.svg"
+    alt="JV Logo"
+    style={{width:"150px"}}
+  />
+</div>
 
 <p style={{color:"#555"}}>
 Last updated: {isClient ? lastUpdated : ""}
