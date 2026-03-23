@@ -74,41 +74,35 @@ export async function GET() {
       console.log("Error:", site.url);
     }
 
-    // 🔴 DOWN EMAIL LOGIC
+    let finalLastStatus = site.lastStatus;
+    let finalDownSince = site.downSince;
+
+    // 🔴 DOWN / UP EMAIL LOGIC
     if (status === "DOWN") {
-
-      if (!site.downSince) {
-
-        db.prepare(`
-          UPDATE sites SET downSince = ?, lastStatus = 'DOWN' WHERE id = ?
-        `).run(now, site.id);
-
-      } else {
-
-        const downTime = now - site.downSince;
-
-        if (downTime > DOWN_THRESHOLD && site.lastStatus !== "DOWN_EMAIL_SENT") {
-
-          console.log("DOWN EMAIL:", site.url);
-
-          await sendEmail({
-            json: async () => ({
-              url: site.url,
-              type: "down"
-            })
-          });
-
-          db.prepare(`
-            UPDATE sites SET lastStatus = 'DOWN_EMAIL_SENT' WHERE id = ?
-          `).run(site.id);
-        }
+      if (!finalDownSince) finalDownSince = now;
+      
+      if (finalLastStatus !== "DOWN_EMAIL_SENT") {
+        console.log("DOWN EMAIL:", site.url);
+        await sendEmail({
+          json: async () => ({
+            url: site.url,
+            type: "down"
+          })
+        });
+        finalLastStatus = 'DOWN_EMAIL_SENT';
       }
-
     } else {
-
-      db.prepare(`
-        UPDATE sites SET downSince = NULL, lastStatus = 'UP' WHERE id = ?
-      `).run(site.id);
+      if (finalLastStatus === 'DOWN_EMAIL_SENT') {
+        console.log("UP EMAIL:", site.url);
+        await sendEmail({
+          json: async () => ({
+            url: site.url,
+            type: "up"
+          })
+        });
+      }
+      finalDownSince = null;
+      finalLastStatus = 'UP';
     }
 
     // 🔴 HOSTING EXPIRY (unchanged)
@@ -119,14 +113,21 @@ export async function GET() {
 
       const diff = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
 
-      console.log("HOSTING:", site.url, diff, site.hostingMailSent);
+      console.log("HOSTING:", site.url, diff);
 
       if (diff <= 30 && diff >= 0) {
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const lastSent = site.hostingMailSent;
+        
+        let shouldSend = false;
+        if (!lastSent || lastSent === 0 || lastSent === 1) {
+          shouldSend = true;
+        } else if (now - lastSent > oneDayMs) {
+          shouldSend = true;
+        }
 
-        if (site.hostingMailSent !== 1) {
-
+        if (shouldSend) {
           console.log("Sending HOSTING mail:", site.url);
-
           await sendEmail({
             json: async () => ({
               url: site.url,
@@ -135,10 +136,9 @@ export async function GET() {
           });
 
           db.prepare(`
-            UPDATE sites SET hostingMailSent = 1 WHERE id = ?
-          `).run(site.id);
+            UPDATE sites SET hostingMailSent = ? WHERE id = ?
+          `).run(now, site.id);
         }
-
       } else {
         db.prepare(`
           UPDATE sites SET hostingMailSent = 0 WHERE id = ?
@@ -154,14 +154,21 @@ export async function GET() {
 
       const diff = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
 
-      console.log("DOMAIN:", site.url, diff, site.domainMailSent);
+      console.log("DOMAIN:", site.url, diff);
 
       if (diff <= 30 && diff >= 0) {
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const lastSent = site.domainMailSent;
+        
+        let shouldSend = false;
+        if (!lastSent || lastSent === 0 || lastSent === 1) {
+          shouldSend = true;
+        } else if (now - lastSent > oneDayMs) {
+          shouldSend = true;
+        }
 
-        if (site.domainMailSent !== 1) {
-
+        if (shouldSend) {
           console.log("Sending DOMAIN mail:", site.url);
-
           await sendEmail({
             json: async () => ({
               url: site.url,
@@ -170,10 +177,9 @@ export async function GET() {
           });
 
           db.prepare(`
-            UPDATE sites SET domainMailSent = 1 WHERE id = ?
-          `).run(site.id);
+            UPDATE sites SET domainMailSent = ? WHERE id = ?
+          `).run(now, site.id);
         }
-
       } else {
         db.prepare(`
           UPDATE sites SET domainMailSent = 0 WHERE id = ?
@@ -181,23 +187,11 @@ export async function GET() {
       }
     }
 
-    // ✅ FINAL FIX: preserve DOWN_EMAIL_SENT
-    let finalLastStatus = site.lastStatus;
-
-    if (status === "UP") {
-      finalLastStatus = "UP";
-    } else if (status === "DOWN") {
-      if (site.lastStatus !== "DOWN_EMAIL_SENT") {
-        finalLastStatus = "DOWN";
-      }
-      // else keep DOWN_EMAIL_SENT
-    }
-
     db.prepare(`
       UPDATE sites
-      SET status = ?, lastStatus = ?, ipAddress = ?
+      SET status = ?, lastStatus = ?, downSince = ?, ipAddress = ?
       WHERE id = ?
-    `).run(status, finalLastStatus, ipAddress, site.id);
+    `).run(status, finalLastStatus, finalDownSince, ipAddress, site.id);
 
   }
 

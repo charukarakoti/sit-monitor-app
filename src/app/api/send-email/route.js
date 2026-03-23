@@ -24,6 +24,11 @@ export async function POST(req){
       text = `${url} is DOWN. Please check immediately.`;
     }
 
+    if(type === "up"){
+      subject = "✅ Site Back UP Alert";
+      text = `${url} is back UP and running normally.`;
+    }
+
     if(type === "hosting"){
       subject = "⚠️ Hosting Expiring Soon";
       text = `Hosting for ${url} will expire within 30 days. Please renew.`;

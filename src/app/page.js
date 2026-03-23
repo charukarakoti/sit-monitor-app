@@ -48,7 +48,6 @@ useEffect(()=>{
 
   const interval = setInterval(()=>{
     fetchSites();
-    fetch("/api/check-sites"); // 🔥 email trigger
   },10000);
 
   return ()=>clearInterval(interval);
@@ -75,8 +74,6 @@ async function addSite(){
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({url:newUrl})
   });
-
-  await fetch("/api/check-sites");
 
   setTimeout(fetchSites,2000);
 

@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "npx concurrently \"node monitor-worker.js\" \"next dev\"",
     "build": "next build",
-    "start": "next start",
+    "start": "npx concurrently \"node monitor-worker.js\" \"next start\"",
     "lint": "eslint"
   },
   "dependencies": {

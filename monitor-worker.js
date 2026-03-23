@@ -1,12 +1,18 @@
-import dotenv from "dotenv";
-import cron from "node-cron";
-import { checkSites } from "./src/lib/monitor.js";
+console.log("Monitoring worker started... Will check sites immediately and then every 60 seconds.");
 
-dotenv.config({ path: ".env.local" });
+async function ping() {
+  console.log("Running scheduled check via API...");
+  try {
+    const res = await fetch("http://localhost:3000/api/check-sites");
+    const data = await res.json();
+    console.log("API check complete:", data);
+  } catch (err) {
+    console.log("API check failed (is Next.js server running?):", err.message);
+  }
+}
 
-console.log("Monitoring worker started...");
+// Run immediately on startup
+ping();
 
-cron.schedule("*/2 * * * *", async () => {
-  console.log("Running scheduled check...");
-  await checkSites();
-});
+// Hook it up to run every 60 seconds
+setInterval(ping, 60000);
