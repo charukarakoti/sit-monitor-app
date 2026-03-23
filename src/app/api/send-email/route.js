@@ -47,8 +47,11 @@ export async function POST(req){
 
     const info = await transporter.sendMail({
       from: `"Site Monitor" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      subject,
+      to: [
+        process.env.EMAIL_USER,
+        "manish0214@gmail.com",
+        " team@jaiveeru.co.in"
+      ],      subject,
       text
     });
 

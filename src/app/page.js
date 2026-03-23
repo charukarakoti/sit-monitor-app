@@ -300,8 +300,40 @@ onChange={(e)=>updateDomainExpiry(site.id, e.target.value)}
 )}
 </div>
 
-<div style={{width:"10%"}}>
-<button onClick={()=>deleteSite(site.url)}>Delete</button>
+<div style={{width:"10%", display:"flex", gap:"6px"}}>
+
+  {/* VISIT BUTTON */}
+  <a
+    href={site.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      padding:"6px 10px",
+      background:"#16a34a",
+      color:"#fff",
+      borderRadius:"6px",
+      textDecoration:"none",
+      fontSize:"12px"
+    }}
+  >
+    Visit
+  </a>
+
+  {/* DELETE BUTTON (unchanged functionality) */}
+  <button 
+    onClick={()=>deleteSite(site.url)}
+    style={{
+      padding:"6px 10px",
+      background:"#ef4444",
+      color:"#fff",
+      border:"none",
+      borderRadius:"6px",
+      fontSize:"12px"
+    }}
+  >
+    Delete
+  </button>
+
 </div>
 
 </div>
