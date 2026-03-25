@@ -10,142 +10,148 @@ const [lastUpdated,setLastUpdated]=useState("");
 const [isClient,setIsClient]=useState(false);
 const [editingDates,setEditingDates]=useState({});
 
-// 📡 FETCH
+// 📡 FETCH (FIXED API + ERROR HANDLING)
 async function fetchSites(){
-  const res = await fetch("/api/sites");
-  const data = await res.json();
-  setSites(data);
+try{
+const res = await fetch("/api/status"); // ✅ FIXED
+const data = await res.json();
+setSites(data);
+}catch(err){
+console.error("Fetch error:", err);
+}
 }
 
 // CLIENT FLAG
 useEffect(()=>{
-  setIsClient(true);
+setIsClient(true);
 },[]);
 
 // LAST UPDATED
 useEffect(()=>{
-  if(!isClient) return;
+if(!isClient) return;
 
-  const now = new Date();
+const now = new Date();
 
-  setLastUpdated(
-    now.toLocaleString("en-IN",{
-      day:"2-digit",
-      month:"short",
-      year:"numeric",
-      hour:"numeric",
-      minute:"2-digit",
-      second:"2-digit",
-      hour12:true
-    })
-  );
+setLastUpdated(
+now.toLocaleString("en-IN",{
+day:"2-digit",
+month:"short",
+year:"numeric",
+hour:"numeric",
+minute:"2-digit",
+second:"2-digit",
+hour12:true
+})
+);
 
 },[sites,isClient]);
 
-// ✅ SINGLE AUTO LOOP (IMPORTANT FIX)
+// AUTO REFRESH
 useEffect(()=>{
-  fetchSites();
+fetchSites();
 
-  const interval = setInterval(()=>{
-    fetchSites();
-  },10000);
+const interval = setInterval(()=>{
+fetchSites();
+},10000);
 
-  return ()=>clearInterval(interval);
+return ()=>clearInterval(interval);
 },[]);
 
 // ➕ ADD SITE
 async function addSite(){
 
-  if(!newUrl) return;
+if(!newUrl) return;
 
-  const tempSite = {
-    id: Date.now(),
-    url: newUrl,
-    status: "Checking",
-    hostingExpiry: null,
-    domainExpiry: null,
-    ipAddress: null
-  };
+const tempSite = {
+id: Date.now(),
+url: newUrl,
+status: "Checking",
+hostingExpiry: null,
+domainExpiry: null,
+ipAddress: null
+};
 
-  setSites(prev => [tempSite, ...prev]);
+setSites(prev => [tempSite, ...prev]);
 
-  await fetch("/api/sites/add",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({url:newUrl})
-  });
+await fetch("/api/sites/add",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({url:newUrl})
+});
 
-  setTimeout(fetchSites,2000);
+setTimeout(fetchSites,2000);
 
-  setNewUrl("");
+setNewUrl("");
 }
 
 // DELETE
 async function deleteSite(url){
-  await fetch("/api/sites/delete",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({url})
-  });
+await fetch("/api/sites/delete",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({url})
+});
 
-  fetchSites();
+fetchSites();
 }
 
 // DOMAIN UPDATE
 async function updateDomainExpiry(id, date){
 
-  const value = date || null;
+const value = date || null;
 
-  setEditingDates(prev => ({
-    ...prev,
-    [id]: { ...prev[id], domain: value }
-  }));
+setEditingDates(prev => ({
+...prev,
+[id]: { ...prev[id], domain: value }
+}));
 
-  setSites(prev =>
-    prev.map(s => s.id === id ? { ...s, domainExpiry: value } : s)
-  );
+setSites(prev =>
+prev.map(s => s.id === id ? { ...s, domainExpiry: value } : s)
+);
 
-  await fetch("/api/sites/update-domain-expiry",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ id, date: value })
-  });
+await fetch("/api/sites/update-domain-expiry",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({ id, date: value })
+});
 }
 
 // HOSTING UPDATE
 async function updateHostingExpiry(id, date){
 
-  const value = date || null;
+const value = date || null;
 
-  setEditingDates(prev => ({
-    ...prev,
-    [id]: { ...prev[id], hosting: value }
-  }));
+setEditingDates(prev => ({
+...prev,
+[id]: { ...prev[id], hosting: value }
+}));
 
-  setSites(prev =>
-    prev.map(s => s.id === id ? { ...s, hostingExpiry: value } : s)
-  );
+setSites(prev =>
+prev.map(s => s.id === id ? { ...s, hostingExpiry: value } : s)
+);
 
-  await fetch("/api/sites/update-hosting-expiry",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ id, date: value })
-  });
+await fetch("/api/sites/update-hosting-expiry",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({ id, date: value })
+});
 }
 
 // DATE FORMAT
 function formatInputDate(date){
-  if(!date) return "";
-  const d = new Date(date);
-  if(isNaN(d)) return "";
-  return d.toISOString().split("T")[0];
+if(!date) return "";
+const d = new Date(date);
+if(isNaN(d)) return "";
+return d.toISOString().split("T")[0];
 }
 
-// STATUS COLOR
+// ✅ FIXED STATUS COLOR
 function getStatusColor(status){
-  if(status==="Checking") return "#f59e0b";
-  if(status==="UP") return "#16a34a";
-  return "#ef4444";
+const s = status?.trim().toLowerCase();
+
+if(s==="checking") return "#f59e0b";
+if(s==="up") return "#16a34a";
+return "#ef4444";
 }
 
 // UI
@@ -198,9 +204,10 @@ border:"none",
 borderRadius:"8px",
 marginLeft:"10px"
 }}
+
 >
-Add Site
-</button>
+
+Add Site </button>
 
 </div>
 
@@ -227,7 +234,11 @@ fontWeight:"600"
 
 </div>
 
-{sites.map(site=>(
+{sites.map(site=>{
+
+const isUp = site.status?.trim().toLowerCase() === "up";
+
+return(
 
 <div key={site.id} style={{
 display:"flex",
@@ -244,13 +255,14 @@ alignItems:"center"
 <span style={{color:getStatusColor(site.status)}}>
 {site.status === "Checking"
   ? "Checking..."
-  : site.status === "UP"
+  : isUp
   ? "LIVE"
   : "DOWN"}
 </span>
 </div>
 
 {/* HOSTING */}
+
 <div style={{width:"15%"}}>
 <input
 type="date"
@@ -260,19 +272,6 @@ value={
 }
 onChange={(e)=>updateHostingExpiry(site.id, e.target.value)}
 />
-
-{site.hostingExpiry && (() => {
-  const today = new Date();
-  const exp = new Date(site.hostingExpiry + "T00:00:00");
-  today.setHours(0,0,0,0);
-  exp.setHours(0,0,0,0);
-  const diff = Math.floor((exp - today) / (1000*60*60*24));
-  return diff >= 0 && diff <= 30;
-})() && (
-  <div style={{color:"orange",fontSize:"11px"}}>
-    Hosting Expiring Soon ⚠️
-  </div>
-)}
 </div>
 
 <div style={{width:"15%"}}>
@@ -280,6 +279,7 @@ onChange={(e)=>updateHostingExpiry(site.id, e.target.value)}
 </div>
 
 {/* DOMAIN */}
+
 <div style={{width:"15%"}}>
 <input
 type="date"
@@ -289,60 +289,48 @@ value={
 }
 onChange={(e)=>updateDomainExpiry(site.id, e.target.value)}
 />
-
-{site.domainExpiry && (() => {
-  const today = new Date();
-  const exp = new Date(site.domainExpiry + "T00:00:00");
-  today.setHours(0,0,0,0);
-  exp.setHours(0,0,0,0);
-  const diff = Math.floor((exp - today) / (1000*60*60*24));
-  return diff >= 0 && diff <= 30;
-})() && (
-  <div style={{color:"orange",fontSize:"11px"}}>
-    Domain Expiring Soon ⚠️
-  </div>
-)}
 </div>
 
 <div style={{width:"10%", display:"flex", gap:"6px"}}>
 
-  {/* VISIT BUTTON */}
-  <a
-    href={site.url}
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{
-      padding:"6px 10px",
-      background:"#16a34a",
-      color:"#fff",
-      borderRadius:"6px",
-      textDecoration:"none",
-      fontSize:"12px"
-    }}
-  >
-    Visit
-  </a>
+<a
+href={site.url}
+target="_blank"
+rel="noopener noreferrer"
+style={{
+padding:"6px 10px",
+background:"#16a34a",
+color:"#fff",
+borderRadius:"6px",
+textDecoration:"none",
+fontSize:"12px"
+}}
 
-  {/* DELETE BUTTON (unchanged functionality) */}
-  <button 
-    onClick={()=>deleteSite(site.url)}
-    style={{
-      padding:"6px 10px",
-      background:"#ef4444",
-      color:"#fff",
-      border:"none",
-      borderRadius:"6px",
-      fontSize:"12px"
-    }}
-  >
-    Delete
-  </button>
+>
 
-</div>
+Visit </a>
+
+<button
+onClick={()=>deleteSite(site.url)}
+style={{
+padding:"6px 10px",
+background:"#ef4444",
+color:"#fff",
+border:"none",
+borderRadius:"6px",
+fontSize:"12px"
+}}
+
+>
+
+Delete </button>
 
 </div>
 
-))}
+</div>
+
+);
+})}
 
 </div>
 
