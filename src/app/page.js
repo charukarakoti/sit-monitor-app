@@ -71,6 +71,7 @@ domainExpiry: null,
 ipAddress: null
 };
 
+// Add the new site to the top of the list
 setSites(prev => [tempSite, ...prev]);
 
 await fetch("/api/sites/add",{
@@ -84,15 +85,15 @@ setTimeout(fetchSites,2000);
 setNewUrl("");
 }
 
-// DELETE
+// DELETE SITE
 async function deleteSite(url){
-await fetch("/api/sites/delete",{
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({url})
-});
+  setSites(prev => prev.filter(site => site.url !== url));
 
-fetchSites();
+  await fetch("/api/sites/delete",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({url})
+  });
 }
 
 // DOMAIN UPDATE
